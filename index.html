@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dinozor Ansiklopedisi</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+            overflow-x: hidden; /* Yatay kaydırmayı engelle */
+        }
+        /* Kartların ilk yüklenme animasyonu */
+        .card-enter-active {
+            transition: transform 0.4s ease-out, opacity 0.3s ease-in;
+        }
+        .card-enter {
+            transform: scale(0.9);
+            opacity: 0;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Bizi Destekle Butonu ve Paneli -->
+    <div class="fixed top-4 right-4 z-[60]"> <!-- Daha yüksek Z-index -->
+        <!-- Destek Butonu -->
+        <button id="support-button" onclick="toggleSupportPanel()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-full shadow-xl transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 focus:ring-indigo-300">
+            Bizi Destekle
+        </button>
+        
+        <!-- Destek Paneli (Başlangıçta Gizli) -->
+        <div id="support-panel" class="absolute right-0 mt-3 w-64 bg-white rounded-xl shadow-2xl p-4 hidden transform translate-y-2 opacity-0 transition-all duration-300 border border-gray-100">
+            <h4 class="text-lg font-bold text-gray-800 mb-3 border-b pb-2">Bize Ulaşın</h4>
+            
+            <div class="space-y-3">
+                <!-- Email -->
+                <div class="flex items-center text-gray-600">
+                    <!-- Email Ikonu -->
+                    <svg class="w-5 h-5 text-red-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8m-2 4v4a2 4 0 01-2 2H5a2 2 0 01-2-2v-4"></path></svg>
+                    <a href="mailto:aremirhan8@gmail.com" class="hover:text-indigo-600 text-sm md:text-base truncate">aremirhan8@gmail.com</a>
+                </div>
+                
+                <!-- Instagram -->
+                <div class="flex items-center text-gray-600">
+                    <!-- Instagram Ikonu -->
+                    <svg class="w-5 h-5 text-pink-500 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+                    <a href="https://www.instagram.com/emrhanar" target="_blank" class="hover:text-indigo-600 text-sm md:text-base">@emrhanar</a>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- Ana Konteyner -->
+    <div class="p-4 md:p-8">
+        <header class="text-center mb-10">
+            <h1 class="text-4xl font-extrabold text-gray-800 tracking-tight">Dinozor Ansiklopedisi</h1>
+            <p class="text-lg text-gray-500 mt-2">Kartlara tıklayarak her bir dinozorun detaylı özelliklerini keşfedin.</p>
+        </header>
+
+        <!-- Dinozor Kartları Alanı -->
+        <div id="dinosaur-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+            <!-- Kartlar JS ile buraya eklenecek -->
+        </div>
+    </div>
+
+    <!-- Dinozor Detay Penceresi (Modal) -->
+    <div id="detail-modal" class="fixed inset-0 z-50 hidden p-4 md:p-8 bg-black bg-opacity-70 transition-opacity duration-300 overflow-y-auto" onclick="closeModal()">
+        <!-- Modal İçeriği - Swipe In Animasyonu için başlangıç durumu (translate-y-8 ve opacity-0) -->
+        <div id="modal-content" class="bg-white rounded-xl shadow-2xl max-w-3xl mx-auto my-12 md:my-20 p-6 md:p-10 transform opacity-0 -translate-y-8 transition-all duration-400 ease-out" onclick="event.stopPropagation()">
+            
+            <div class="flex justify-between items-start mb-6 border-b pb-3">
+                <h2 id="modal-dino-name" class="text-3xl md:text-4xl font-bold text-gray-800"></h2>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-700 transition-colors duration-200 p-2 -mr-2 rounded-full focus:outline-none focus:ring-2 focus:ring-red-500" aria-label="Kapat">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+
+            <!-- Detay İçerikleri -->
+            <div id="modal-details" class="space-y-4 text-gray-600">
+                <!-- Detaylar JS ile buraya eklenecek -->
+            </div>
+            
+            <p id="modal-image-note" class="text-sm text-center text-gray-400 mt-8 hidden">* Bu görsel bir yer tutucudur. Kendi gerçek görsel URL'inizle değiştirebilirsiniz.</p>
+        </div>
+    </div>
+
+    <script>
+        // Dinozor Verileri
+        const dinosaurs = [
+            // EN POPÜLERLERDEN BAŞLAYARAK TOPLAM 20 DİNOZOR
+            {
+                id: 1,
+                adı: "Tyrannosaurus Rex",
+                yaşadığı_yıl: "Geç Kretase (68-66 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "T. rex",
+                boyu: "Yaklaşık 12 metre",
+                bulunma_tarihi: "1905",
+                çene_gücü: "Yetişkinlerde 6.000 kg'ın üzerinde (En güçlülerden)",
+                beslenme_türü: "Etobur",
+                solunum_türü: "Kuş Benzeri (Hava Keseli)",
+                açıklama: "Tarihin en büyük ve en bilinen etoburlarından biri. Hollywood filmlerinin vazgeçilmezi.",
+                // GÜNCELLENEN GÖRSEL URL'Sİ 
+                görsel_url: "https://www.snexplores.org/wp-content/uploads/2024/05/050824_FK_dino-brains_feat-1030x580.jpg", 
+            },
+            {
+                id: 2,
+                adı: "Triceratops",
+                yaşadığı_yıl: "Geç Kretase (68-66 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "T. horridus",
+                boyu: "Yaklaşık 9 metre",
+                bulunma_tarihi: "1887",
+                çene_gücü: "Orta (Otları kesmek için uygun)",
+                beslenme_türü: "Otobur",
+                solunum_türü: "Kuş Benzeri",
+                açıklama: "Büyük boyun fırfırı ve üç boynuzu ile tanınan, T-Rex ile çağdaş bir otçuldur.",
+                görsel_url: "https://www.discoverychepe.com.mx/articulos/ecologia/images/770Cen_1.jpg", 
+            },
+            {
+                id: 3,
+                adı: "Velociraptor",
+                yaşadığı_yıl: "Geç Kretase (75-71 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "V. mongoliensis",
+                boyu: "Yaklaşık 2 metre (Hollywood'da abartıldı)",
+                bulunma_tarihi: "1924",
+                çene_gücü: "Yüksek",
+                beslenme_türü: "Etobur",
+                solunum_türü: "Kuş Benzeri (Tüylü olduğu düşünülür)",
+                açıklama: "Hızlı hareket eden, çevik ve sosyal avcı olduğu düşünülen küçük bir dinozordur. Filmlerdeki versiyonu gerçek boyutundan büyüktür.",
+                görsel_url: "https://www.thefactsite.com/wp-content/uploads/2020/04/facts-velociraptors.jpg", 
+            },
+            {
+                id: 4,
+                adı: "Stegosaurus",
+                yaşadığı_yıl: "Geç Jura (155-150 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "S. armatus",
+                boyu: "Yaklaşık 9 metre",
+                bulunma_tarihi: "1877",
+                çene_gücü: "Düşük (Bitkileri koparmak için)",
+                beslenme_türü: "Otobur",
+                solunum_türü: "Basit Akciğer Solunumu",
+                açıklama: "Sırtındaki büyük kemik plakaları ve kuyruğundaki dikenlerle tanınır. Plakaların termoregülasyon (ısı dengeleme) için kullanıldığı düşünülür.",
+                görsel_url: "https://cdn.britannica.com/59/242659-050-75430D8A/Outdoor-statue-of-Stegosaurus-dinosaur.jpg", 
+            },
+            {
+                id: 5,
+                adı: "Brachiosaurus",
+                yaşadığı_yıl: "Geç Jura (154-153 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "B. altithorax",
+                boyu: "Yaklaşık 26 metre",
+                bulunma_tarihi: "1903",
+                çene_gücü: "Düşük (Sadece yaprakları koparmak için)",
+                beslenme_türü: "Otobur",
+                solunum_türü: "Kuş Benzeri (Devasa Hava Keseleri)",
+                açıklama: "Gezegenimizde yürüyen en büyük hayvanlardan biri. Uzun boyu sayesinde en yüksek ağaçların yapraklarına ulaşırdı.",
+                görsel_url: "https://www.thoughtco.com/thmb/GIEDp80BQzKLa_vjCdZeVYaMxuI=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/GettyImages-680791823-59af09edaad52b0010486221.jpg", 
+            },
+            {
+                id: 6,
+                adı: "Spinosaurus",
+                yaşadığı_yıl: "Erken ve Geç Kretase (112-93 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "S. aegyptiacus",
+                boyu: "Yaklaşık 15-18 metre",
+                bulunma_tarihi: "1912",
+                çene_gücü: "Yüksek (Balık avlamak için konik dişler)",
+                beslenme_türü: "Etobur (Büyük ölçüde balıkçıl)",
+                solunum_türü: "Kuş Benzeri",
+                açıklama: "Sırtındaki yelken benzeri yapı ve suda yaşamaya adapte olmasıyla bilinen dev bir etoburdur. T-Rex'ten bile uzun olduğu düşünülür.",
+                görsel_url: "https://placehold.co/400x200/5C8A8A/FFFFFF?text=SPINOSAURUS+GÖRSELİ", 
+            },
+            {
+                id: 7,
+                adı: "Ankylosaurus",
+                yaşadığı_yıl: "Geç Kretase (68-66 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "A. magniventris",
+                boyu: "Yaklaşık 6-8 metre",
+                bulunma_tarihi: "1908",
+                çene_gücü: "Düşük",
+                beslenme_türü: "Otobur",
+                solunum_türü: "Kuş Benzeri",
+                açıklama: "Vücudu zırh plakalarıyla kaplı ve kuyruğunda kemikli bir tokmak bulunan tank benzeri bir dinozordur.",
+                görsel_url: "https://placehold.co/400x200/5C8A8A/FFFFFF?text=ANKYLOSAURUS+GÖRSELİ", 
+            },
+            {
+                id: 8,
+                adı: "Pteranodon",
+                yaşadığı_yıl: "Geç Kretase (86-84 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "P. longiceps",
+                boyu: "Kanat Açıklığı: 7 metre",
+                bulunma_tarihi: "1876",
+                çene_gücü: "Yok (Dişsiz gaga)",
+                beslenme_türü: "Etobur (Balıkçıl)",
+                solunum_türü: "Hava Keseli",
+                açıklama: "Dinozor değil, uçan bir sürüngen (Pterosaur). Gökyüzünün devleriydi ve okyanuslarda balık avlarlardı.",
+                görsel_url: "https://placehold.co/400x200/5C8A8A/FFFFFF?text=PTERANODON+GÖRSELİ", 
+            },
+            {
+                id: 9,
+                adı: "Allosaurus",
+                yaşadığı_yıl: "Geç Jura (155-150 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "A. fragilis",
+                boyu: "Yaklaşık 8.5 metre",
+                bulunma_tarihi: "1877",
+                çene_gücü: "Orta (Kesici dişler)",
+                beslenme_türü: "Etobur",
+                solunum_türü: "Kuş Benzeri",
+                açıklama: "Jura döneminin en yaygın ve baskın yırtıcısı. T-Rex'in daha eski bir akrabasıdır.",
+                görsel_url: "https://placehold.co/400x200/5C8A8A/FFFFFF?text=ALLOSAURUS+GÖRSELİ", 
+            },
+            {
+                id: 10,
+                adı: "Apatosaurus",
+                yaşadığı_yıl: "Geç Jura (152-151 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "A. louisae",
+                boyu: "Yaklaşık 23 metre",
+                bulunma_tarihi: "1877",
+                çene_gücü: "Düşük",
+                beslenme_türü: "Otobur",
+                solunum_türü: "Kuş Benzeri",
+                açıklama: "Halk arasında Brontosaurus ile karıştırılan, devasa boyunlu bir Sauropod. Çok uzun, kamçı benzeri bir kuyruğa sahipti.",
+                görsel_url: "https://placehold.co/400x200/5C8A8A/FFFFFF?text=APATOSAURUS+GÖRSELİ", 
+            },
+            {
+                id: 11,
+                adı: "Dilophosaurus",
+                yaşadığı_yıl: "Erken Jura (193 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "D. wetherilli",
+                boyu: "Yaklaşık 6 metre",
+                bulunma_tarihi: "1942",
+                çene_gücü: "Orta",
+                beslenme_türü: "Etobur/Balıkçıl",
+                solunum_türü: "Basit Akciğer Solunumu",
+                açıklama: "Kafasındaki iki kemik ibiği ile tanınır. Filmlerdeki gibi zehir tükürmez veya boyun fırfırı yoktur.",
+                görsel_url: "https://placehold.co/400x200/5C8A8A/FFFFFF?text=DILOPHOSAURUS+GÖRSELİ", 
+            },
+            {
+                id: 12,
+                adı: "Iguanodon",
+                yaşadığı_yıl: "Erken Kretase (126-113 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "I. bernissartensis",
+                boyu: "Yaklaşık 10 metre",
+                bulunma_tarihi: "1822",
+                çene_gücü: "Yüksek (Çiğneme yeteneği)",
+                beslenme_türü: "Otobur",
+                solunum_türü: "Kuş Benzeri",
+                açıklama: "Keşfedilen ilk dinozorlardan biri. Baş parmağında keskin bir diken bulunurdu.",
+                görsel_url: "https://placehold.co/400x200/5C8A8A/FFFFFF?text=IGUANODON+GÖRSELİ", 
+            },
+            {
+                id: 13,
+                adı: "Carnotaurus",
+                yaşadığı_yıl: "Geç Kretase (72-69 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "C. sastrei",
+                boyu: "Yaklaşık 8 metre",
+                bulunma_tarihi: "1985",
+                çene_gücü: "Yüksek (Hızlı ısırma)",
+                beslenme_türü: "Etobur",
+                solunum_türü: "Kuş Benzeri",
+                açıklama: "Kafasındaki iki belirgin boynuz ve çok kısa kollarıyla bilinen hızlı bir yırtıcı.",
+                görsel_url: "https://placehold.co/400x200/5C8A8A/FFFFFF?text=CARNOTAURUS+GÖRSELİ", 
+            },
+            {
+                id: 14,
+                adı: "Pachycephalosaurus",
+                yaşadığı_yıl: "Geç Kretase (70-66 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "P. wyomingensis",
+                boyu: "Yaklaşık 4.5 metre",
+                bulunma_tarihi: "1938",
+                çene_gücü: "Düşük",
+                beslenme_türü: "Otobur/Hepçil",
+                solunum_türü: "Kuş Benzeri",
+                açıklama: "Kafasının üstündeki kalın, kemikli kubbe ile tanınır. Bu kubbeyi çiftleşme ritüellerinde veya rakiplerle savaşta kullanmış olabilir.",
+                görsel_url: "https://placehold.co/400x200/5C8A8A/FFFFFF?text=PACHYCEPHALOSAURUS+GÖRSELİ", 
+            },
+            {
+                id: 15,
+                adı: "Gallimimus",
+                yaşadığı_yıl: "Geç Kretase (70 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "G. bullatus",
+                boyu: "Yaklaşık 6 metre",
+                bulunma_tarihi: "1975",
+                çene_gücü: "Düşük (Dişsiz gaga)",
+                beslenme_türü: "Hepçil",
+                solunum_türü: "Kuş Benzeri",
+                açıklama: "Deve kuşuna benzeyen, son derece hızlı koşan bir dinozor. 'Tavuk taklitçisi' anlamına gelir.",
+                görsel_url: "https://placehold.co/400x200/5C8A8A/FFFFFF?text=GALLIMIMUS+GÖRSELİ", 
+            },
+            {
+                id: 16,
+                adı: "Archaeopteryx",
+                yaşadığı_yıl: "Geç Jura (150 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "A. lithographica",
+                boyu: "Yaklaşık 0.5 metre (Karga büyüklüğünde)",
+                bulunma_tarihi: "1861",
+                çene_gücü: "Düşük",
+                beslenme_türü: "Etobur (Böcekler)",
+                solunum_türü: "Kuş Benzeri",
+                açıklama: "Hem dinozor hem de kuş özelliklerini gösteren önemli bir geçiş fosili. Tüylere ve kanatlara sahipti.",
+                görsel_url: "https://placehold.co/400x200/5C8A8A/FFFFFF?text=ARCHAEOPTERYX+GÖRSELİ", 
+            },
+            {
+                id: 17,
+                adı: "Baryonyx",
+                yaşadığı_yıl: "Erken Kretase (125 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "B. walkeri",
+                boyu: "Yaklaşık 7.5 metre",
+                bulunma_tarihi: "1983",
+                çene_gücü: "Yüksek",
+                beslenme_türü: "Etobur (Büyük ölçüde balıkçıl)",
+                solunum_tür: "Kuş Benzeri",
+                açıklama: "Kavisli çenesi ve balık avlamaya uygun dişleriyle dikkat çeker. Ön pençesinde çok büyük bir tırnak vardı.",
+                görsel_url: "https://placehold.co/400x200/5C8A8A/FFFFFF?text=BARYONYX+GÖRSELİ", 
+            },
+            {
+                id: 18,
+                adı: "Maiasaura",
+                yaşadığı_yıl: "Geç Kretase (76 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "M. peeblesorum",
+                boyu: "Yaklaşık 9 metre",
+                bulunma_tarihi: "1978",
+                çene_gücü: "Yüksek (Bitkileri ezmek için)",
+                beslenme_türü: "Otobur",
+                solunum_türü: "Kuş Benzeri",
+                açıklama: "'İyi anne kertenkele' anlamına gelir. Yavrularına baktığına dair kanıtlar bulunmuştur.",
+                görsel_url: "https://placehold.co/400x200/5C8A8A/FFFFFF?text=MAIASAURA+GÖRSELİ", 
+            },
+            {
+                id: 19,
+                adı: "Compsognathus",
+                yaşadığı_yıl: "Geç Jura (150 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "C. longipes",
+                boyu: "Yaklaşık 1 metre (Tavuk büyüklüğünde)",
+                bulunma_tarihi: "1859",
+                çene_gücü: "Düşük",
+                beslenme_türü: "Etobur",
+                solunum_türü: "Basit Akciğer Solunumu",
+                açıklama: "Bilinen en küçük dinozorlardan biriydi. Hızlı ve çevik olduğu düşünülür.",
+                görsel_url: "https://placehold.co/400x200/5C8A8A/FFFFFF?text=COMPSOGNATHUS+GÖRSELİ", 
+            },
+            {
+                id: 20,
+                adı: "Parasaurolophus",
+                yaşadığı_yıl: "Geç Kretase (76-73 Milyon Yıl Önce)",
+                doğum_şekli: "Yumurtlayan",
+                bilimsel_tür: "P. walkeri",
+                boyu: "Yaklaşık 7.5 metre",
+                bulunma_tarihi: "1922",
+                çene_gücü: "Orta (Çiğneme kabiliyeti yüksek)",
+                beslenme_türü: "Otobur",
+                solunum_türü: "Kuş Benzeri",
+                açıklama: "Kafasındaki uzun, geriye doğru eğimli ibik ile tanınır. Bu ibiği ses çıkarmak için kullanırdı.",
+                görsel_url: "https://placehold.co/400x200/5C8A8A/FFFFFF?text=PARASAUROLOPHUS+GÖRSELİ", 
+            }
+        ];
+
+        const gridContainer = document.getElementById('dinosaur-grid');
+        const modal = document.getElementById('detail-modal');
+        const modalContent = document.getElementById('modal-content');
+        const modalName = document.getElementById('modal-dino-name');
+        const modalDetails = document.getElementById('modal-details');
+        const modalImageNote = document.getElementById('modal-image-note');
+        
+        // Destek Paneli değişkenleri
+        const supportPanel = document.getElementById('support-panel');
+        const supportButton = document.getElementById('support-button');
+        let isPanelOpen = false;
+
+        /**
+         * Dinozor adına göre dinamik placeholder görsel URL'si oluşturur.
+         * Yeni kod, artık dinozor nesnesindeki 'görsel_url' alanını kullanıyor.
+         * Fallback olarak hala yer tutucuyu döndürüyor.
+         * @param {string} url - Dinozorun önceden tanımlı URL'si.
+         * @param {string} name - Dinozor adı (Yer tutucu için).
+         * @param {number} width - Genişlik.
+         * @param {number} height - Yükseklik.
+         * @returns {string} Görsel URL'si.
+         */
+        function getDinoImageUrl(url, name, width, height) {
+            // Eğer URL dolu ve bir yer tutucu değilse, direkt URL'i kullan.
+            if (url && !url.includes("placehold.co")) {
+                // Not: Kendi resimlerinizi kullanırken, resim yüklenemezse diye bir hata durumu (onerror) ekliyorum.
+                return url;
+            }
+            // Aksi takdirde, yer tutucuyu kullan.
+            const text = encodeURIComponent(`GÖRSEL | ${name}`);
+            const bgColor = '5C8A8A'; // Koyu Camgöbeği/Gri
+            const textColor = 'FFFFFF'; // Beyaz
+            return `https://placehold.co/${width}x${height}/${bgColor}/${textColor}?text=${text}`;
+        }
+
+
+        /**
+         * Destek panelini açıp kapatır ve animasyonu yönetir.
+         */
+        function toggleSupportPanel() {
+            isPanelOpen = !isPanelOpen;
+            if (isPanelOpen) {
+                // Göster (Fade in & Slide down)
+                supportPanel.classList.remove('hidden', 'opacity-0', 'translate-y-2');
+                supportPanel.classList.add('opacity-100', 'translate-y-0');
+            } else {
+                // Gizle (Fade out & Slide up)
+                supportPanel.classList.remove('opacity-100', 'translate-y-0');
+                supportPanel.classList.add('opacity-0', 'translate-y-2');
+                // Animasyon bittikten sonra tamamen gizle
+                setTimeout(() => {
+                    supportPanel.classList.add('hidden');
+                }, 300);
+            }
+        }
+
+        // Dışarı tıklama olayını yakala ve paneli kapat
+        document.addEventListener('click', (event) => {
+            // Modal açıksa veya tıklanan yer destek butonu/paneli içindeyse kapatma
+            if (isPanelOpen && !supportPanel.contains(event.target) && !supportButton.contains(event.target)) {
+                toggleSupportPanel();
+            }
+        });
+
+
+        /**
+         * Dinozor kartlarını oluşturur ve sayfaya ekler.
+         */
+        function renderCards() {
+            gridContainer.innerHTML = ''; // Önceki kartları temizle
+            dinosaurs.forEach(dino => {
+                const card = document.createElement('div');
+                card.className = 'card-enter-active bg-white p-6 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-[1.02] cursor-pointer border border-gray-100';
+                card.dataset.id = dino.id;
+                
+                // Kart görselini ekle (Yer tutucu kullanıldı)
+                const imageUrl = getDinoImageUrl(dino.görsel_url, dino.adı, 400, 200);
+                const isPlaceholder = imageUrl.includes("placehold.co");
+
+                // Görselin stilini ve kapsayıcısını güncelledim
+                card.innerHTML = `
+                    <!-- GÖRSELİN KAPSAYICISI: Yuvarlaklığı ve kırpma (overflow-hidden) ayarlandı -->
+                    <div class="rounded-lg overflow-hidden mb-4">
+                        <img 
+                            src="${imageUrl}" 
+                            alt="${dino.adı} Görseli" 
+                            class="w-full h-36 object-cover transition-transform duration-300 hover:scale-105"
+                            onerror="this.onerror=null; this.src='https://placehold.co/400x200/FCA5A5/FFFFFF?text=YÜKLENEMEDİ'"
+                        />
+                    </div>
+                    <div class="text-center">
+                        <h3 class="text-xl font-semibold text-gray-800">${dino.adı}</h3>
+                        <p class="text-sm text-gray-500 mt-1">${dino.beslenme_türü}</p>
+                    </div>
+                `;
+                card.addEventListener('click', () => openModal(dino.id));
+                gridContainer.appendChild(card);
+            });
+        }
+
+        /**
+         * Detay penceresini açar ve ilgili dinozorun verilerini yükler.
+         * @param {number} id - Açılacak dinozorun ID'si.
+         */
+        function openModal(id) {
+            const dino = dinosaurs.find(d => d.id === id);
+            if (!dino) return;
+
+            // Destek panelini kapat (açıksa)
+            if (isPanelOpen) {
+                 toggleSupportPanel();
+            }
+
+            // 1. Modalı Hazırla
+            modalName.textContent = dino.adı;
+            
+            // Görseli oluştur (daha büyük yer tutucu)
+            const modalImageUrl = getDinoImageUrl(dino.görsel_url, dino.adı, 700, 350);
+            const isPlaceholder = modalImageUrl.includes("placehold.co");
+
+            const imageHtml = `
+                <div class="mb-6">
+                    <img 
+                        src="${modalImageUrl}" 
+                        alt="${dino.adı} Görseli" 
+                        class="w-full h-auto object-cover rounded-xl shadow-md ${isPlaceholder ? 'p-4' : ''}"
+                        onerror="this.onerror=null; this.src='https://placehold.co/700x350/FCA5A5/FFFFFF?text=GÖRSEL+YÜKLENEMEDİ'"
+                    />
+                </div>
+            `;
+            
+            // Detay satırlarını oluştur
+            const detailsHtml = `
+                ${createDetailRow("Açıklama", dino.açıklama, true)}
+                ${createDetailRow("Yaşadığı Yıl", dino.yaşadığı_yıl)}
+                ${createDetailRow("Bilimsel Tür", dino.bilimsel_tür)}
+                ${createDetailRow("Beslenme Türü", dino.beslenme_türü, false, getDietColor(dino.beslenme_türü))}
+                ${createDetailRow("Doğum Şekli", dino.doğum_şekli)}
+                ${createDetailRow("Boyu", dino.boyu)}
+                ${createDetailRow("Çene Gücü", dino.çene_gücü)}
+                ${createDetailRow("Solunum Türü", dino.solunum_türü)}
+                ${createDetailRow("Bulunma Tarihi", dino.bulunma_tarihi)}
+            `;
+            
+            // İçeriği birleştir
+            modalDetails.innerHTML = imageHtml + detailsHtml;
+            
+            // Yer tutucu notunu sadece placeholder kullanılıyorsa göster
+            if (isPlaceholder) {
+                modalImageNote.classList.remove('hidden'); 
+            } else {
+                 modalImageNote.classList.add('hidden'); 
+            }
+
+
+            // 2. Scroll Lock'u Aktifleştir
+            document.body.classList.add('overflow-hidden');
+
+            // 3. Animasyon Başlat (Swipe In)
+            modal.classList.remove('hidden', 'opacity-0');
+            modal.classList.add('opacity-100');
+            
+            modalContent.classList.remove('opacity-0', '-translate-y-8');
+            modalContent.classList.add('opacity-100', 'translate-y-0');
+
+
+            // ESC ile kapatma
+            document.addEventListener('keydown', handleEscKey);
+        }
+
+        /**
+         * Detay penceresini kapatır.
+         */
+        function closeModal() {
+            // Animasyon Bitişi (Swipe Out)
+            modalContent.classList.remove('opacity-100', 'translate-y-0');
+            modalContent.classList.add('opacity-0', '-translate-y-8');
+            
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0');
+            modalImageNote.classList.add('hidden'); // Yer tutucu notunu gizle
+
+            // Scroll Lock'u Deaktifleştir
+            document.body.classList.remove('overflow-hidden');
+
+            // Animasyon bittikten sonra gizle
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 400);
+
+            document.removeEventListener('keydown', handleEscKey);
+        }
+
+        /**
+         * ESC tuşuna basıldığında modalı kapatır.
+         * @param {KeyboardEvent} event 
+         */
+        function handleEscKey(event) {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        }
+        
+        /**
+         * Detay satırı HTML'ini oluşturur.
+         */
+        function createDetailRow(label, value, isFullWidth = false, colorClass = 'text-blue-600') {
+            const labelClass = "font-medium text-gray-800";
+            let valueClass = isFullWidth ? "col-span-2 mt-1 text-base" : "font-semibold";
+
+            if (isFullWidth) {
+                // HATA BURADAYDI! Başlangıçtaki URL'ler kaldırıldı.
+                return `
+                    <div class="py-2">
+                        <p class="${labelClass}">${label}:</p>
+                        <p class="${valueClass} text-gray-600">${value}</p>
+                    </div>
+                    <hr class="border-gray-100">
+                `;
+            } else {
+                 return `
+                    <div class="grid grid-cols-2 py-2 border-b border-gray-100">
+                        <div class="${labelClass}">${label}</div>
+                        <div class="text-right ${valueClass} ${colorClass}">${value}</div>
+                    </div>
+                `;
+            }
+        }
+
+        /**
+         * Beslenme türüne göre renk sınıfı döndürür.
+         */
+        function getDietColor(diet) {
+            switch (diet) {
+                case 'Etobur':
+                    return 'text-red-600 bg-red-100 p-1 rounded-md inline-block text-xs font-bold';
+                case 'Otobur':
+                    return 'text-green-600 bg-green-100 p-1 rounded-md inline-block text-xs font-bold';
+                case 'Hepçil':
+                    return 'text-yellow-600 bg-yellow-100 p-1 rounded-md inline-block text-xs font-bold';
+                default:
+                    return 'text-gray-600';
+            }
+        }
+
+
+        // Uygulama başlangıcı
+        window.onload = renderCards;
+    </script>
+
+</body>
+</html>
